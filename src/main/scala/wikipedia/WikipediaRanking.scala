@@ -4,6 +4,7 @@ import org.apache.spark.SparkConf
 import org.apache.spark.SparkContext
 import org.apache.spark.SparkContext._
 import org.apache.spark.rdd.RDD
+import wikipedia.WikipediaRanking.langs
 
 case class WikipediaArticle(title: String, text: String) {
   /**
@@ -30,7 +31,7 @@ object WikipediaRanking {
    *  Hint1: consider using method `aggregate` on RDD[T].
    *  Hint2: consider using method `mentionsLanguage` on `WikipediaArticle`
    */
-  def occurrencesOfLang(lang: String, rdd: RDD[WikipediaArticle]): Int =  wikiRdd.aggregate(0)((a,b) =>  if(b.mentionsLanguage(lang)) 1 else 0 ,( x,y ) => x + y )
+  def occurrencesOfLang(lang: String, rdd: RDD[WikipediaArticle]): Int =  rdd.aggregate(0)((a,b) =>  if(b.mentionsLanguage(lang)) 1+a else a , (x,y) => x + y )
 
   /* (1) Use `occurrencesOfLang` to compute the ranking of the languages
    *     (`val langs`) by determining the number of Wikipedia articles that
@@ -56,7 +57,7 @@ object WikipediaRanking {
    *   Note: this operation is long-running. It can potentially run for
    *   several seconds.
    */
-  def rankLangsUsingIndex(index: RDD[(String, Iterable[WikipediaArticle])]): List[(String, Int)] = makeIndex(langs,wikiRdd).map(a => (a._1,a._2.size)).collect().toList.sortWith(_._2 >_._2)
+  def rankLangsUsingIndex(index: RDD[(String, Iterable[WikipediaArticle])]): List[(String, Int)] = index.map(a => (a._1,a._2.size)).collect().toList.sortWith(_._2 >_._2)
 
   /* (3) Use `reduceByKey` so that the computation of the index and the ranking are combined.
    *     Can you notice an improvement in performance compared to measuring *both* the computation of the index
@@ -65,13 +66,13 @@ object WikipediaRanking {
    *   Note: this operation is long-running. It can potentially run for
    *   several seconds.
    */
-  def rankLangsReduceByKey(langs: List[String], rdd: RDD[WikipediaArticle]): List[(String, Int)] = ???
+  def rankLangsReduceByKey(langs: List[String], rdd: RDD[WikipediaArticle]): List[(String, Int)] =  makeIndex(langs,wikiRdd).map(a => (a._1,a._2.size)).collect().toList.sortWith(_._2 >_._2)
 
   def main(args: Array[String]) {
 
    // print("result:   " + makeIndex(langs,wikiRdd).collectAsMap())
-     print("result1: " + rankLangs(langs,wikiRdd))
-    print("result2: " + rankLangsUsingIndex(makeIndex(langs,wikiRdd)))
+  //   print("result1: " + rankLangs(langs,wikiRdd))
+   // print("result2: " + rankLangsUsingIndex(makeIndex(langs,wikiRdd)))
   //  maprint("result1: " + rankLangs(langs,wikiRdd))keIndex(langs,wikiRdd).take(10)
 
     /* Languages ranked according to (1) */
